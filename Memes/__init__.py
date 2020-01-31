@@ -1,8 +1,9 @@
 from .memes import Memes
-import asyncio
+# import asyncio
 
-def setup(bot):    
+
+def setup(bot):
     n = Memes(bot)
-    loop = asyncio.get_event_loop()
+    # loop = asyncio.get_event_loop()
     # loop.create_task(n.dankcolors())
     bot.add_cog(n)

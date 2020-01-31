@@ -3,25 +3,15 @@ import asyncio
 import random
 import logging
 from random import randint
-from datetime import datetime
 from os.path import dirname, abspath
-from typing import cast, Optional, Union
+from typing import Optional, Union
 
 import discord
-from discord.ext import commands
 
-from redbot.core.utils.chat_formatting import pagify
-from redbot.core.utils.mod import is_allowed_by_hierarchy
-
-from redbot.cogs.bank import check_global_setting_guildowner, check_global_setting_admin
+from redbot.cogs.bank import check_global_setting_admin
 
 from redbot.core.bot import Red
-from redbot.core import commands, i18n, checks, bank, errors, i18n
-from redbot.core.utils.common_filters import (
-    filter_invites,
-    filter_various_mentions,
-    escape_spoilers_and_mass_mentions,
-)
+from redbot.core import commands, i18n, checks, bank, errors
 from redbot.core.utils.mod import get_audit_reason
 from redbot.core import Config, modlog
 
@@ -49,7 +39,6 @@ class SetParser:
 
 
 class Memes(commands.Cog):
-
     def __init__(self, bot: Red):
         self.bot = bot
         self.running = False
@@ -175,7 +164,7 @@ class Memes(commands.Cog):
         """
 
         if self.role_dank in ctx.author.roles:
-            await ctx.send('You already have that role ' + ctx.author.mention)
+            await ctx.send("You already have that role " + ctx.author.mention)
             return True
 
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -187,7 +176,16 @@ class Memes(commands.Cog):
             )
         else:
             await ctx.author.add_roles(self.role_dank)
-            await ctx.send('You bought the ' + self.role_dank.name + ' role for ' + str(self.cost_dank) + ' ' + currency_name + ' ' + ctx.author.mention)
+            await ctx.send(
+                "You bought the "
+                + self.role_dank.name
+                + " role for "
+                + str(self.cost_dank)
+                + " "
+                + currency_name
+                + " "
+                + ctx.author.mention
+            )
 
     @commands.guild_only()
     @checks.mod()
@@ -202,7 +200,7 @@ class Memes(commands.Cog):
                 dcol = discord.Colour(c)
                 await asyncio.sleep(0.2)
                 await role.edit(colour=dcol)
-            await role.edit(colour=discord.Colour(0xe74c3c))
+            await role.edit(colour=discord.Colour(0xE74C3C))
             self.running = False
 
     async def dankcolors(self):
@@ -212,8 +210,10 @@ class Memes(commands.Cog):
         role = guild.get_role(353238417212964865)
 
         # while True:
-        def r(): return random.randint(0, 255)
-        dcol = discord.Colour(int('%02X%02X%02X' % (r(), r(), r()), 16))
+        def r():
+            return random.randint(0, 255)
+
+        dcol = discord.Colour(int("%02X%02X%02X" % (r(), r(), r()), 16))
         # await asyncio.sleep(60)
         await role.edit(colour=dcol)
         await asyncio.sleep(300)
@@ -225,64 +225,75 @@ class Memes(commands.Cog):
             if not self.dank_cd:
                 await self.dankcolors()
             else:
-                await ctx.send('Command on cooldown...')
+                await ctx.send("Command on cooldown...")
 
     @commands.command(pass_context=True, no_pm=True)
     async def addme(self, ctx):
-        file = discord.File(pd + '/media/addme.png',
-                            filename=None, spoiler=False)
+        file = discord.File(pd + "/media/addme.png", filename=None, spoiler=False)
         await ctx.send(file=file)
 
     @commands.command(pass_context=True, no_pm=True)
     async def cialis(self, ctx):
-        file = discord.File(pd + '/media/cialis.png',
-                            filename=None, spoiler=False)
+        file = discord.File(pd + "/media/cialis.png", filename=None, spoiler=False)
         await ctx.send(file=file)
 
     @commands.command(pass_context=True, no_pm=True)
     async def furries(self, ctx):
-        file = discord.File(pd + '/media/furries.gif',
-                            filename=None, spoiler=False)
+        file = discord.File(pd + "/media/furries.gif", filename=None, spoiler=False)
         await ctx.send(file=file)
 
     @commands.command(pass_context=True, no_pm=True)
     async def plebs(self, ctx):
-        file = discord.File(pd + '/media/plebs.png',
-                            filename=None, spoiler=False)
+        file = discord.File(pd + "/media/plebs.png", filename=None, spoiler=False)
         await ctx.send(file=file)
 
     @commands.command(pass_context=True, no_pm=True)
     async def sgbarcon(self, ctx):
-        file = discord.File(pd + '/media/sgbarcon.png',
-                            filename=None, spoiler=False)
+        file = discord.File(pd + "/media/sgbarcon.png", filename=None, spoiler=False)
         await ctx.send(file=file)
 
     @commands.command()
     @commands.guild_only()
-    async def addmegarole(self, ctx: commands.Context, user: discord.Member, *, reason: str = None):
+    async def addmegarole(
+        self, ctx: commands.Context, user: discord.Member, *, reason: str = None
+    ):
         """
         """
         author = ctx.author
         guild = ctx.guild
-        if author.id == 147349764281729024 or author.id == 383195095610163200 or author.id == 95174017710821376:
+        if (
+            author.id == 147349764281729024
+            or author.id == 383195095610163200
+            or author.id == 95174017710821376
+        ):
             for r in guild.roles:
                 if r.id == 308667119963209749:
                     megarole = r
-            await ctx.message.mentions[0].add_roles(megarole, reason="Assigned manually by "+author.display_name+"")
+            await ctx.message.mentions[0].add_roles(
+                megarole, reason="Assigned manually by " + author.display_name + ""
+            )
             await ctx.send("Role set")
 
     @commands.command()
     @commands.guild_only()
-    async def removemegarole(self, ctx: commands.Context, user: discord.Member, *, reason: str = None):
+    async def removemegarole(
+        self, ctx: commands.Context, user: discord.Member, *, reason: str = None
+    ):
         """
         """
         author = ctx.author
         guild = ctx.guild
-        if author.id == 147349764281729024 or author.id == 383195095610163200 or author.id == 95174017710821376:
+        if (
+            author.id == 147349764281729024
+            or author.id == 383195095610163200
+            or author.id == 95174017710821376
+        ):
             for r in guild.roles:
                 if r.id == 308667119963209749:
                     megarole = r
-            await ctx.message.mentions[0].remove_roles(megarole, reason="Removed manually by "+author.display_name+"")
+            await ctx.message.mentions[0].remove_roles(
+                megarole, reason="Removed manually by " + author.display_name + ""
+            )
             await ctx.send("Role removed")
 
     @commands.command(pass_context=True, no_pm=True)
@@ -299,10 +310,18 @@ class Memes(commands.Cog):
                 await asyncio.sleep((randint(5, 30) / 10))
                 await m.edit(content=newtick)
             elapsed_time = time.time() - start_time
-            await m.edit(content=ctx.message.author.mention + " finished in " + str(round(elapsed_time, 2)) + "s")
+            await m.edit(
+                content=ctx.message.author.mention
+                + " finished in "
+                + str(round(elapsed_time, 2))
+                + "s"
+            )
             self.races -= 1
         else:
-            await ctx.send(ctx.message.author.mention + " there can only be up to 3 races at the same time. Try later...")
+            await ctx.send(
+                ctx.message.author.mention
+                + " there can only be up to 3 races at the same time. Try later..."
+            )
 
     @commands.command(pass_context=True, no_pm=True)
     async def balance(self, ctx: commands.Context, user: discord.Member = None):
@@ -314,11 +333,17 @@ class Memes(commands.Cog):
         bal = await bank.get_balance(user)
         currency = await bank.get_currency_name(ctx.guild)
 
-        await ctx.send("{user}'s balance is {num} {currency}".format(user=user.display_name, num=bal, currency=currency))
+        await ctx.send(
+            "{user}'s balance is {num} {currency}".format(
+                user=user.display_name, num=bal, currency=currency
+            )
+        )
 
     @check_global_setting_admin()
     @commands.command(pass_context=True, no_pm=True)
-    async def balanceset(self, ctx: commands.Context, to: discord.Member, creds: SetParser):
+    async def balanceset(
+        self, ctx: commands.Context, to: discord.Member, creds: SetParser
+    ):
         """Set the balance of user's bank account.
         Passing positive and negative values will add/remove currency instead.
         Examples:
@@ -363,7 +388,9 @@ class Memes(commands.Cog):
     @commands.guild_only()
     @commands.bot_has_permissions(kick_members=True)
     @checks.admin_or_permissions(kick_members=True)
-    async def superkick(self, ctx: commands.Context, user: discord.Member, *, reason: str = None):
+    async def superkick(
+        self, ctx: commands.Context, user: discord.Member, *, reason: str = None
+    ):
         """Kick a user.
         If a reason is specified, it will be the reason that shows up
         in the audit log.
@@ -384,8 +411,11 @@ class Memes(commands.Cog):
         audit_reason = get_audit_reason(author, reason)
         try:
             await guild.kick(user, reason=audit_reason)
-            log.info("{}({}) kicked {}({})".format(
-                author.name, author.id, user.name, user.id))
+            log.info(
+                "{}({}) kicked {}({})".format(
+                    author.name, author.id, user.name, user.id
+                )
+            )
         except discord.errors.Forbidden:
             await ctx.send(_("I'm not allowed to do that."))
         except Exception as e:
@@ -444,7 +474,9 @@ class Memes(commands.Cog):
         guild = ctx.guild
 
         if author == user:
-            return _("I cannot let you do that. Self-harm is bad {}").format("\N{PENSIVE FACE}")
+            return _("I cannot let you do that. Self-harm is bad {}").format(
+                "\N{PENSIVE FACE}"
+            )
         elif guild.me.top_role <= user.top_role or user == guild.owner:
             return _("I cannot do that due to discord hierarchy rules")
         elif not (0 <= days <= 7):

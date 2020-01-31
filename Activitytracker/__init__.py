@@ -1,6 +1,7 @@
 from .activitytracker import ActivityTracker
 from .dao import DAO
 
+
 def setup(bot):
     n = ActivityTracker(bot, DAO())
     bot.add_cog(n)
