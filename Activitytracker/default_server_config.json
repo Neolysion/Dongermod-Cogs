@@ -1,0 +1,36 @@
+{
+  "streamer_discord_id": "111601428375601152",
+  "server_id": "111772771016515584",
+  "operation_mode": 3,
+  "channels": {
+    "sg_text_channel_ids": ["236235594861117440"],
+    "mod_text_channel_ids": ["117297689044975618"],
+    "sg_notification_text_channel_ids": ["111772771016515584", "236235594861117440"],
+    "welcome_sub_notification_text_channel_ids": ["111772771016515584"],
+    "pleb_text_channels": ["296969400110678017"]
+
+  },
+  "roles": {
+    "admin_role": ["Subgame Admin","Admin","Bot Admin"],
+    "mod_role": ["Mod","Mods","Moderator","Subgame Moderator","Bot Moderator"],
+    "sub_role": ["Sub","Subs","Subscriber","Subscribers","Twitch Subscriber"]
+  },
+  "other": {
+    "join_time": 150,
+    "timeout_invite_wave_count": 3,
+    "timeout_invite_wave_cooldown": 10,
+    "max_queue_length": 0,
+    "invite_message": "Admiralbulldog just opened a subgame lobby and you have been invited! You have {jointime} seconds left to join it.\n Join now by entering this password in the private lobby search: **{password}**\n\n",
+    "accept_message": "You accepted the subgame invite! Join now by entering this password in the private lobby search: **{password}**",
+    "sub_channel_scheduled_message": "@here to join Admiralbulldogs subgame use this password: **{password}**",
+    "notification_channel_scheduled_message": "@here to join Admiralbulldogs subgame use this password: **{password}**",
+    "sub_queue_clear_message": "@here the subgame queue was cleared. Feel free to join again by typing **!sgjoin**",
+    "notification_queue_clear_message": "@here the subgame queue was cleared. Feel free to join again by typing **!sgjoin**",
+    "welcome_sub_message": "Welcome to the Keppa Kleb!",
+    "goodbye_sub_message": " left the Keppa Kleb! BibleThump ",
+    "welcome_pleb_message": "Welcome to Bulldongs Kappa Club ! Have a great time here :wink: ! Please check the pinned messages by clicking on the pin icon in the top-right corner on the server and #announcements PepeFedora . Download Better Discord to see Twitch/BTTV emotes in discord! <https://betterdiscord.net/home/>",
+	"giveaway_deadline" : "",
+    "giveaway_item" : ""
+  }
+}
+

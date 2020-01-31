@@ -1,0 +1,19 @@
+{
+    "author": [
+      "Boro"
+    ],
+    "bot_version": [
+      3,
+      0,
+      0
+    ],
+    "description": "Custom movienight manager",
+    "hidden": false,
+    "install_msg": "Movienight intalled",
+    "requirements": [
+      "requests"
+    ],
+    "short": "Custom movienight tracker",
+    "tags": [
+    ]
+  }

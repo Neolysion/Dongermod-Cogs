@@ -1,0 +1,20 @@
+{
+    "author": [
+      "Boro"
+    ],
+    "bot_version": [
+      3,
+      0,
+      0
+    ],
+    "description": "Custom Activity tracker",
+    "hidden": false,
+    "install_msg": "Activitytracker intalled",
+    "requirements": [
+      "pymysql",
+      "requests"
+    ],
+    "short": "Custom Activity tracker",
+    "tags": [
+    ]
+  }
