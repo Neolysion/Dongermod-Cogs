@@ -12,6 +12,7 @@ from pymysql import MySQLError
 
 log = logging.getLogger(__name__)
 
+
 class DAO:
     """Custom Dongermod DAO"""
 
@@ -112,7 +113,9 @@ class DAO:
                 cursor.execute(sql2, (user_id,))
 
                 if not self.get_member_stats(server_id, user_id):
-                    self.update_member_stats(server_id, user_id, self.get_member_stats_template())
+                    self.update_member_stats(
+                        server_id, user_id, self.get_member_stats_template()
+                    )
                 sql3 = "INSERT INTO member_queue (queue_fk, member_fk, join_date) VALUES (%s, %s, %s);"
                 cursor.execute(sql3, (q_id, user_id, datetime.datetime.now()))
             self.connection.commit()
