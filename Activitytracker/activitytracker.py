@@ -44,6 +44,9 @@ class ActivityTracker(commands.Cog):
         self.min_regular_points = 2000
         # ------------------------------------------------
 
+        # Setup Discord py
+        self.guild = self.bot.get_guild(self.guild_id)
+
         self.regular_role = None
         self.sub_role = None
         self.inactives_updated = True # TODO set false if update is needed
@@ -52,15 +55,9 @@ class ActivityTracker(commands.Cog):
         pass
 
     def load_roles(self):
-        server = self.bot.get_guild(self.guild_id)
-        for r in server.roles:
-            if r.id == self.regular_role_id:
-                self.regular_role = r
-            if r.id == self.sub_role_id:
-                self.sub_role = r
-            if self.regular_role and self.sub_role:
-                return True
-        return False
+        self.regular_role = self.guild.get_role(self.regular_role_id)
+        self.regular_role = self.guild.get_role(self.sub_role_id)
+        return bool(self.regular_role) and bool(self.regular_role)
 
     async def activity_listener(self, message):
         if isinstance(message.channel, discord.DMChannel) or message.author == self.bot.user:
@@ -172,7 +169,7 @@ class ActivityTracker(commands.Cog):
             if w_delta_to_now.days > 7:
                 # remove regular role if he wasn't active enough
                 if ass["w_last_check"]["msg_count"] < self.min_msgs_per_week:
-                    if self.regular_role and self.regular_role in author.roles:
+                    if self.regular_role in author.roles:
                         await author.remove_roles(self.regular_role, reason="Low user activity")
                         print("Removed regular role from " + author.display_name +
                               " because weekly count was only " + str(ass["w_last_check"]["msg_count"]))
@@ -191,11 +188,14 @@ class ActivityTracker(commands.Cog):
     async def update_inactives(self):
         print("Running inactivity update...")
         self.inactives_updated = True
-        guild = self.bot.get_guild(self.guild_id)
-        for member in guild.members:
-            author = member
-            print("Fetching " + str(author))
-            this_stats = self.dao.get_member_stats(str(self.guild_id), author.id)
+
+        if not self.load_roles():
+            print("Error: Roles not found")
+            return
+    
+        for member in self.regular_role.members:
+            print("Fetching " + str(member))
+            this_stats = self.dao.get_member_stats(str(self.guild_id), member.id)
             if "activity_stats" in this_stats:
                 ass = this_stats["activity_stats"]
                 now = datetime.datetime.now()
@@ -206,9 +206,9 @@ class ActivityTracker(commands.Cog):
                 if w_delta_to_now.days > 7:
                     # remove regular role if he wasn't active enough
                     if ass["w_last_check"]["msg_count"] < self.min_msgs_per_week:
-                        if self.regular_role and self.regular_role in author.roles:
-                            await author.remove_roles(self.regular_role, reason="Low user activity")
-                            print("Removed regular role from " + author.display_name +
+                        if self.regular_role in member.roles:
+                            await member.remove_roles(self.regular_role, reason="Low user activity")
+                            print("Removed regular role from " + member.display_name +
                                   " because weekly count was only " + str(ass["w_last_check"]["msg_count"]))
                     # reset the weekly stats
                     this_stats["activity_stats"] = {}
@@ -216,8 +216,8 @@ class ActivityTracker(commands.Cog):
                         "period": now.strftime("%Y-%m-%d %H:%M:%S"), "msg_count": 0}
 
                 self.dao.update_member_stats(
-                    str(self.guild_id), author.id, this_stats)
-                await asyncio.sleep(0.1)
+                    str(self.guild_id), member.id, this_stats)
+                # await asyncio.sleep(0.1)
         print("Inactivity update finished")
 
     # @commands.command(pass_context=True, no_pm=False, help="")

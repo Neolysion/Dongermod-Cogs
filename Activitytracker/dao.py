@@ -1,3 +1,5 @@
+import logging
+
 import random
 import datetime
 import json
@@ -7,6 +9,8 @@ import requests
 
 # Connect to the database
 from pymysql import MySQLError
+
+log = logging.getLogger(__name__)
 
 class DAO():
     """Custom Dongermod DAO"""
@@ -28,7 +32,7 @@ class DAO():
 
 
     def get_server_config_template(self):
-        with open(server_default_config_file, "r") as json_template_file:
+        with open(self.server_default_config_file, "r") as json_template_file:
             defaut_conf = json.load(json_template_file)
         return defaut_conf
 
@@ -41,8 +45,8 @@ class DAO():
 
     def add_new_server(self, server_id):
         try:
-            with connection.cursor() as cursor:
-                default_config = get_server_config_template()
+            with self.connection.cursor() as cursor:
+                default_config = self.get_server_config_template()
                 sql1 = 'INSERT INTO queue VALUES ();'
                 cursor.execute(sql1)
                 created_queue_id = cursor.lastrowid
@@ -50,56 +54,56 @@ class DAO():
                 config_as_string = json.dumps(default_config)
                 sql2 = "INSERT INTO server (server_discord_id,queue_fk, server_configuration_json) VALUES (%s, %s, %s);"
                 cursor.execute(sql2, (server_id, created_queue_id, config_as_string))
-            connection.commit()
+            self.connection.commit()
         finally:
             print("added new server")
 
 
     def update_server_config(self, server_id, config):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 config_as_string = json.dumps(config)
                 sql = 'UPDATE server SET server_configuration_json = %s WHERE server_discord_id = %s;'
                 cursor.execute(sql, (config_as_string, server_id))
-            connection.commit()
+            self.connection.commit()
         except MySQLError as e:
             print('MYSQL error: {!r}, errno is {}'.format(e, e.args[0]))
 
 
     def update_last_invite_info(self, server_id, info_jid):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 info_jid_as_string = json.dumps(info_jid)
                 sql = 'UPDATE server SET last_invite_info_json = %s WHERE server_discord_id = %s;'
                 cursor.execute(sql, (info_jid_as_string, server_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def update_steam_id(self, user_id, steam_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'UPDATE member SET steam_id = %s WHERE discord_id = %s;'
                 cursor.execute(sql, (steam_id, user_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def update_afk_flag(self, user_id, value):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'UPDATE member SET do_not_invite = %s WHERE discord_id = %s;'
                 cursor.execute(sql, (value, user_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def append_sub_to_queue(self, server_id, user_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT queue_fk FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
 
@@ -108,121 +112,121 @@ class DAO():
                 sql2 = 'INSERT IGNORE INTO member (discord_id) VALUES (%s);'
                 cursor.execute(sql2, (user_id,))
 
-                if not get_member_stats(server_id, user_id):
-                    update_member_stats(server_id, user_id, get_member_stats_template())
+                if not self.get_member_stats(server_id, user_id):
+                    self.update_member_stats(server_id, user_id, self.get_member_stats_template())
                 sql3 = 'INSERT INTO member_queue (queue_fk, member_fk, join_date) VALUES (%s, %s, %s);'
                 cursor.execute(sql3, (q_id, user_id, datetime.datetime.now()))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def append_sub_to_banlist(self, server_id, user_id):
         try:
-            with connection.cursor() as cursor:
-                banlist = get_banlist(server_id)
+            with self.connection.cursor() as cursor:
+                banlist = self.get_banlist(server_id)
                 banlist.append(user_id)
                 jbanlist = json.dumps(banlist)
                 sql = 'UPDATE server SET ban_list_json = %s WHERE server_discord_id = %s'
                 cursor.execute(sql, (jbanlist, server_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def append_sub_to_invite_list(self, server_id, user_id):
         try:
-            with connection.cursor() as cursor:
-                invite_list = get_invite_list(server_id)
+            with self.connection.cursor() as cursor:
+                invite_list =self. get_invite_list(server_id)
                 invite_list.append(user_id)
                 jinvite_list = json.dumps(invite_list)
                 sql = 'UPDATE server SET invite_list_json = %s WHERE server_discord_id = %s'
                 cursor.execute(sql, (jinvite_list, server_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def append_sub_to_accept_list(self, server_id, user_id):
         try:
-            with connection.cursor() as cursor:
-                accept_list = get_accepted_list(server_id)
+            with self.connection.cursor() as cursor:
+                accept_list = self.get_accepted_list(server_id)
                 accept_list.append(user_id)
                 jaccept_list = json.dumps(accept_list)
                 sql = 'UPDATE server SET accept_list_json = %s WHERE server_discord_id = %s'
                 cursor.execute(sql, (jaccept_list, server_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def remove_sub_from_queue(self, server_id, user_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT queue_fk FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
                 q_id = cursor.fetchone()
 
                 sql2 = 'DELETE FROM member_queue WHERE member_fk = %s AND queue_fk = %s;'
                 cursor.execute(sql2, (user_id, q_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def remove_sub_from_banlist(self, server_id, user_id):
         try:
-            with connection.cursor() as cursor:
-                banlist = get_banlist(server_id)
+            with self.connection.cursor() as cursor:
+                banlist = self.get_banlist(server_id)
                 banlist.remove(user_id)
                 jbanlist = json.dumps(banlist)
                 sql = 'UPDATE server SET ban_list_json = %s WHERE server_discord_id = %s;'
                 cursor.execute(sql, (jbanlist, server_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def wipe_queue(self, server_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT queue_fk FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
                 q_id = cursor.fetchone()
 
                 sql2 = 'DELETE FROM member_queue WHERE queue_fk=%s;'
                 cursor.execute(sql2, (q_id,))
-            connection.commit()
+            self.connection.commit()
         finally:
             print("wiped queue")
 
 
     def wipe_invite_list(self, server_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'UPDATE server SET invite_list_json = %s WHERE server_discord_id = %s'
                 cursor.execute(sql, ("[]", server_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             print("wiped invite list")
 
 
     def wipe_accept_list(self, server_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'UPDATE server SET accept_list_json = %s WHERE server_discord_id = %s'
                 cursor.execute(sql, ("[]", server_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             print("wiped accept list")
 
 
     def wipe_last_invite_info(self, server_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'UPDATE server SET last_invite_info_json = %s WHERE server_discord_id = %s'
                 cursor.execute(sql, ("[]", server_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             print("wiped last invite info")
 
@@ -230,7 +234,7 @@ class DAO():
     def get_queue(self, server_id, afk_cleared=False):
         queue = []
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT queue_fk FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (int(server_id),))
                 c = cursor.fetchone()
@@ -257,7 +261,7 @@ class DAO():
         queue = []
         date = []
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT queue_fk FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
                 q_id = cursor.fetchone()
@@ -276,7 +280,7 @@ class DAO():
 
     def get_banlist(self, server_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT ban_list_json FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
                 c = cursor.fetchone()
@@ -294,7 +298,7 @@ class DAO():
 
     def get_invite_list(self, server_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT invite_list_json FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
                 c = cursor.fetchone()
@@ -312,7 +316,7 @@ class DAO():
 
     def get_accepted_list(self, server_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT accept_list_json FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
                 c = cursor.fetchone()
@@ -332,7 +336,7 @@ class DAO():
         config = None
         i_server_id = int(server_id)
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT server_configuration_json FROM server WHERE server_discord_id = %s;'
                 cursor.execute(sql, (i_server_id,))
                 c = cursor.fetchone()
@@ -349,7 +353,7 @@ class DAO():
     def get_last_invite(self, server_id):
         msg = None
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT last_invite_info_json FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
                 c = cursor.fetchone()
@@ -367,10 +371,10 @@ class DAO():
 
 
     def add_sub_at(self, server_id, user_id, position):
-        queue, date = get_queue_with_date(server_id)
+        queue, date = self.get_queue_with_date(server_id)
 
         if user_id in queue:
-            remove_sub_from_queue(server_id, user_id)
+            self.remove_sub_from_queue(server_id, user_id)
 
         if not position <= 0 and not position > len(queue):
             user_at_pos_date = date[int(position)]
@@ -385,7 +389,7 @@ class DAO():
             new_user_date = datetime.datetime.now()
 
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT queue_fk FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
                 c = cursor.fetchone()
@@ -396,19 +400,19 @@ class DAO():
                 sql3 = 'INSERT INTO member_queue (queue_fk, member_fk, join_date) VALUES (%s, %s, %s);'
                 cursor.execute(sql3, (q_id, user_id, new_user_date))
 
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
 
     def set_steam_id(self, user_id, steam_id):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'INSERT IGNORE INTO member (discord_id) VALUES (%s);'
                 cursor.execute(sql, (user_id,))
                 sql2 = 'UPDATE member SET steam_id = %s, verified_steam = %s WHERE discord_id = %s;'
                 cursor.execute(sql2, (steam_id, 0, user_id))
-            connection.commit()
+            self.connection.commit()
         finally:
             pass
 
@@ -417,7 +421,7 @@ class DAO():
         steam_id = None
         verified = False
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT steam_id, verified_steam FROM member WHERE discord_id=%s;'
                 cursor.execute(sql, (user_id,))
                 c = cursor.fetchone()
@@ -437,15 +441,15 @@ class DAO():
     async def fetch_match_details(self, match_id):
         # return local match data if available
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT match_id, content_json FROM dota_matches WHERE match_id=%s;'
                 cursor.execute(sql, (match_id,))
                 c = cursor.fetchone()
-                found_id = None
+                # found_id = None
                 found_data = None
                 if c:
                     if c[0]:
-                        found_id = c[0]
+                        # found_id = c[0]
                         found_data = c[1]
                 if found_data:
                     if isinstance(found_data, dict):
@@ -468,7 +472,7 @@ class DAO():
     def get_queue_with_steam_ids(self, server_id):
         queue = []
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT queue_fk FROM server WHERE server_discord_id=%s;'
                 cursor.execute(sql, (server_id,))
                 c = cursor.fetchone()
@@ -491,20 +495,20 @@ class DAO():
 
     def add_match_data(self, match_id, j_match_data):
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 js_match_data = json.dumps(j_match_data)
                 sql = 'INSERT IGNORE INTO dota_matches (match_id, content_json) VALUES (%s, %s);'
                 cursor.execute(sql, (int(match_id), js_match_data))
-            connection.commit()
+            self.connection.commit()
         finally:
             print("added match data")
 
 
     async def verify_steam(self, user_id):
-        steam_id, verif_status = get_steam_id(user_id)
+        steam_id, verif_status = self.get_steam_id(user_id)
         if steam_id:
             try:
-                r = requests.post('http://localhost:3005/addfriend/', json={"steam_id": str(steam_id)})
+                requests.post('http://localhost:3005/addfriend/', json={"steam_id": str(steam_id)})
                 return True
             except:
                 print("Failed sending verification request to steam bot: " + str(steam_id))
@@ -573,7 +577,7 @@ class DAO():
             return processed_data
 
     def get_days_since_last_game(self, server_id, member_id):
-        stats = get_member_stats(server_id, member_id)
+        stats = self.get_member_stats(server_id, member_id)
         period = "none"
         for i in reversed(stats["log"]):
             if i[1].startswith("participated in a subgame") and "public pw" in i[1]:
@@ -586,7 +590,7 @@ class DAO():
     def get_afk_flag(self, server_id, member_id):
         result = False
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT do_not_invite FROM member WHERE discord_id=%s;'
                 cursor.execute(sql, (member_id,))
                 c = cursor.fetchone()
@@ -602,7 +606,7 @@ class DAO():
     def get_all_registered_subs(self):
         subs = []
         try:
-            with connection.cursor() as cursor:
+            with self.connection.cursor() as cursor:
                 sql = 'SELECT discord_id, steam_id FROM member;'
                 cursor.execute(sql)
                 c = cursor.fetchall()
@@ -621,7 +625,7 @@ class DAO():
     def get_sub_in_giveaway(self, user_id):
         list = []
         try:
-            with open(giveaway_path) as data_file:
+            with open(self.giveaway_path) as data_file:
                 lines = data_file.readlines()
                 for l in lines:
                     list.append(l)
@@ -634,20 +638,20 @@ class DAO():
 
 
     def wipe_giveaway(self):
-        if os.path.exists(giveaway_path):
-            os.rename(giveaway_path, 'data/giveaway/giveaway_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H.%M.%S')) + '.json')
-        open(giveaway_path, 'w+').close()
+        if os.path.exists(self.giveaway_path):
+            os.rename(self.giveaway_path, 'data/giveaway/giveaway_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H.%M.%S')) + '.json')
+        open(self.giveaway_path, 'w+').close()
 
 
     def append_sub_to_giveaway(self, user_id, tickets):
-        with open(giveaway_path, "a") as myfile:
+        with open(self.giveaway_path, "a") as myfile:
             myfile.write(user_id + "\n")
 
 
     def get_random_sub_from_giveaway(self):
         list = []
         try:
-            with open(giveaway_path) as data_file:
+            with open(self.giveaway_path) as data_file:
                 lines = data_file.readlines()
                 for l in lines:
                     l = l.replace("\n", "")
