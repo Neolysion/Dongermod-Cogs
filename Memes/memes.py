@@ -11,7 +11,7 @@ import discord
 from redbot.cogs.bank import check_global_setting_admin
 
 from redbot.core.bot import Red
-from redbot.core import commands, i18n, checks, bank, errors
+from redbot.core import commands, checks, bank, errors, i18n
 from redbot.core.utils.mod import get_audit_reason
 from redbot.core import Config, modlog
 
@@ -442,12 +442,12 @@ class Memes(commands.Cog):
     @commands.bot_has_permissions(ban_members=True)
     @checks.admin_or_permissions(ban_members=True)
     async def superban(
-        self,
-        ctx: commands.Context,
-        user: discord.Member,
-        days: Optional[int] = 0,
-        *,
-        reason: str = None,
+            self,
+            ctx: commands.Context,
+            user: discord.Member,
+            days: Optional[int] = 0,
+            *,
+            reason: str = None,
     ):
         """Ban a user from this server and optionally delete days of messages.
         If days is not a number, it's treated as the first word of the reason.
@@ -463,12 +463,12 @@ class Memes(commands.Cog):
             await ctx.send(result)
 
     async def ban_user(
-        self,
-        user: discord.Member,
-        ctx: commands.Context,
-        days: int = 0,
-        reason: str = None,
-        create_modlog_case=False,
+            self,
+            user: discord.Member,
+            ctx: commands.Context,
+            days: int = 0,
+            reason: str = None,
+            create_modlog_case=False,
     ) -> Union[str, bool]:
         author = ctx.author
         guild = ctx.guild

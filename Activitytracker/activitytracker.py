@@ -6,6 +6,7 @@ import asyncio
 from redbot.core.bot import Red
 from redbot.core import commands
 from redbot.core import bank
+from redbot.core import Config
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -17,52 +18,43 @@ class ActivityTracker(commands.Cog):
         self.bot = bot
         self.dao = dao
 
-        # Adjustable settings
-        # ------------------------------------------------
-        self.guild_id = 111772771016515584
-        self.sub_role_id = 111789209924190208
-        self.regular_role_id = 345877423142731778
-        self.listening_channel_ids = [
-            111772771016515584,
-            117297689044975618,
-            308668265817964544,
-            309318262213312512,
-            296969400110678017,
-        ]
+        self.config = Config.get_conf(self, identifier=3120267791213791)
+        default_global = {
+            # Adjustable settings
+            # ------------------------------------------------
+            "guild_id": 111772771016515584,
+            "sub_role_id": 111789209924190208,
+            "regular_role_id": 345877423142731778,
+            "listening_channel_ids": [111772771016515584, 117297689044975618,
+                                      308668265817964544, 309318262213312512, 296969400110678017],
 
-        # how many messages are needed in an hour for it to be credited
-        self.min_msgs_per_hour = 1
-
-        # if he wrote enough messages this hour, the hour will be credited with this many points
-        self.hourly_credit = 8
-
-        # if user reached daily max msgs he will get this many points
-        self.day_limit_credit = 10
-
-        # maximum hours(msgs) that can be credited per day
-        self.daily_max_msgs = 12
-
-        # if user can't keep up this many credited hours per week he loses the role
-        self.min_msgs_per_week = 20
-
-        # needed points for role
-        self.min_regular_points = 2000
-        # ------------------------------------------------
-
-        # Setup Discord py
-        self.guild = self.bot.get_guild(self.guild_id)
-
+            # how many messages are needed in an hour for it to be credited
+            "min_msgs_per_hour": 1,
+            # if he wrote enough messages this hour, the hour will be credited with this many points
+            "hourly_credit": 8,
+            # if user reached daily max msgs he will get this many points
+            "day_limit_credit": 10,
+            # maximum hours(msgs) that can be credited per day
+            "daily_max_msgs": 12,
+            # if user can't keep up this many credited hours per week he loses the role
+            "min_msgs_per_week": 20,
+            # needed points for role
+            "min_regular_points": 2000,
+            # ------------------------------------------------
+        }
+        self.config.register_global(**default_global)
         self.regular_role = None
         self.sub_role = None
-        self.inactives_updated = True  # TODO set false if update is needed
+        self.guild = self.bot.get_guild(self.config.guild_id())
+        self.load_roles()
 
     def __unload(self):
         pass
 
     def load_roles(self):
-        self.regular_role = self.guild.get_role(self.regular_role_id)
-        self.regular_role = self.guild.get_role(self.sub_role_id)
-        return bool(self.regular_role) and bool(self.regular_role)
+        self.regular_role = self.guild.get_role(self.config.regular_role_id())
+        self.sub_role = self.guild.get_role(self.config.sub_role_id())
+        return bool(self.regular_role) and bool(self.sub_role)
 
     async def activity_listener(self, message):
         if (
@@ -73,24 +65,16 @@ class ActivityTracker(commands.Cog):
 
         author = message.author
 
-        if not self.load_roles():
-            print("Error: Roles not found")
-            return
-
-        if not self.inactives_updated:
-            print("Running inactives task")
-            await self.update_inactives()
-
         # remove regular role if this user is not subbed anymore
         if self.sub_role not in author.roles and self.regular_role in author.roles:
             await author.remove_roles(self.regular_role)
 
         elif (
             self.sub_role in author.roles
-            and message.channel.id in self.listening_channel_ids
+            and message.channel.id in self.config.listening_channel_ids()
         ):
             now = datetime.datetime.now()
-            this_stats = self.dao.get_member_stats(str(self.guild_id), author.id)
+            this_stats = self.dao.get_member_stats(str(self.config.guild_id()), author.id)
 
             # create empty stats if new user
             if "activity_stats" not in this_stats:
@@ -150,10 +134,10 @@ class ActivityTracker(commands.Cog):
                 ass["h_last_check"]["msg_count"] += 1
 
                 # credit the period if enough messages
-                if ass["h_last_check"]["msg_count"] >= self.min_msgs_per_hour:
+                if ass["h_last_check"]["msg_count"] >= self.config.min_msgs_per_hour():
                     balance = await bank.get_balance(author)
                     # deposit points for being active this hour
-                    await bank.set_balance(author, balance + self.hourly_credit)
+                    await bank.set_balance(author, balance + self.config.hourly_credit())
                     ass["h_last_check"]["period_credited"] = True
                     ass["d_last_check"]["msg_count"] += 1
 
@@ -162,7 +146,7 @@ class ActivityTracker(commands.Cog):
                         + " received hourly credit (balance from "
                         + str(balance)
                         + " to "
-                        + str(balance + self.hourly_credit)
+                        + str(balance +  self.config.hourly_credit())
                         + ")"
                     )
                     # print("Stats: ")
@@ -170,17 +154,17 @@ class ActivityTracker(commands.Cog):
                     # print("Triggermessage: \"" + message.content + "\" from "+message.channel.name)
 
                     # lock for this day if daily limit reached
-                    if ass["d_last_check"]["msg_count"] >= self.daily_max_msgs:
+                    if ass["d_last_check"]["msg_count"] >= self.config.daily_max_msgs():
                         ass["d_last_check"]["period_credited"] = True
                         # up daily gain to 100
-                        await bank.set_balance(author, balance + self.day_limit_credit)
+                        await bank.set_balance(author, balance + self.config.day_limit_credit())
 
                         print(
                             author.display_name
                             + " reached daily limit (balance from "
                             + str(balance)
                             + " to "
-                            + str(balance + self.day_limit_credit)
+                            + str(balance + self.config.day_limit_credit())
                             + ")"
                         )
                         # print("\nStats:")
@@ -189,17 +173,17 @@ class ActivityTracker(commands.Cog):
 
             # apply regular role if user reached 2k points
             if (
-                await bank.get_balance(author) >= self.min_regular_points
+                await bank.get_balance(author) >= self.config.min_regular_points()
                 and self.regular_role not in author.roles
             ):
                 await author.add_roles(
                     self.regular_role,
-                    reason="User reached " + str(self.min_regular_points) + " points",
+                    reason="User reached " + str(self.config.min_regular_points()) + " points",
                 )
                 print(
                     author.display_name
                     + " reached "
-                    + str(self.min_regular_points)
+                    + str(self.config.min_regular_points())
                     + " points and received the regular role"
                 )
 
@@ -214,7 +198,7 @@ class ActivityTracker(commands.Cog):
             # weekly period ended
             if w_delta_to_now.days > 7:
                 # remove regular role if he wasn't active enough
-                if ass["w_last_check"]["msg_count"] < self.min_msgs_per_week:
+                if ass["w_last_check"]["msg_count"] < self.config.min_msgs_per_week():
                     if self.regular_role in author.roles:
                         await author.remove_roles(
                             self.regular_role, reason="Low user activity"
@@ -237,16 +221,12 @@ class ActivityTracker(commands.Cog):
                 ass["w_last_check"]["msg_count"] += 1
 
             self.dao.update_member_stats(
-                str(self.guild_id), message.author.id, this_stats
+                str(self.config.guild_id()), message.author.id, this_stats
             )
 
     async def update_inactives(self):
         print("Running inactivity update...")
         self.inactives_updated = True
-
-        if not self.load_roles():
-            print("Error: Roles not found")
-            return
 
         for member in self.regular_role.members:
             print("Fetching " + str(member))
@@ -260,7 +240,7 @@ class ActivityTracker(commands.Cog):
 
                 if w_delta_to_now.days > 7:
                     # remove regular role if he wasn't active enough
-                    if ass["w_last_check"]["msg_count"] < self.min_msgs_per_week:
+                    if ass["w_last_check"]["msg_count"] < self.config.min_msgs_per_week():
                         if self.regular_role in member.roles:
                             await member.remove_roles(
                                 self.regular_role, reason="Low user activity"
@@ -278,7 +258,7 @@ class ActivityTracker(commands.Cog):
                         "msg_count": 0,
                     }
 
-                self.dao.update_member_stats(str(self.guild_id), member.id, this_stats)
+                self.dao.update_member_stats(str(self.config.guild_id()), member.id, this_stats)
                 # await asyncio.sleep(0.1)
         print("Inactivity update finished")
 

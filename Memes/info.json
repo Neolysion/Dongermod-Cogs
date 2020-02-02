@@ -1,0 +1,18 @@
+{
+    "author": [
+      "Boro"
+    ],
+    "bot_version": [
+      3,
+      0,
+      0
+    ],
+    "description": "Meme cog",
+    "hidden": false,
+    "install_msg": "Meme cog intalled",
+    "requirements": [
+    ],
+    "short": "Custom Meme cog",
+    "tags": [
+    ]
+  }

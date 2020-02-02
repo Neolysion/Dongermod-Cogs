@@ -5,12 +5,12 @@ import requests
 import aiohttp
 import ssl
 import json
-import time
 import binascii
 import hashlib
 import hmac
 import os
 import re
+import time
 import urllib
 
 from datetime import datetime

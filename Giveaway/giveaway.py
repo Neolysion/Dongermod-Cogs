@@ -2,7 +2,7 @@ import asyncio
 import re
 
 from redbot.core.bot import Red
-from redbot.core import checks, commands
+from redbot.core import checks, Config, commands
 
 
 class Giveaway(commands.Cog):
@@ -38,16 +38,8 @@ class Giveaway(commands.Cog):
             and self.server_config["other"]["giveaway_deadline"]
         ):
             if not self.dao.get_sub_in_giveaway(str(this_author.id)):
-                if (
-                    "luckboost_3" in stats
-                    and stats["luckboost_3"]
-                    and regular_role in this_author.roles
-                ):
-                    self.dao.append_sub_to_giveaway(str(this_author.id), 1)
-                    self.dao.append_sub_to_giveaway(str(this_author.id), 1)
-                    self.dao.append_sub_to_giveaway(str(this_author.id), 1)
-                    self.dao.append_sub_to_giveaway(str(this_author.id), 1)
-                    self.dao.append_sub_to_giveaway(str(this_author.id), 1)
+                if "luckboost_3" in stats and stats["luckboost_3"] and regular_role in this_author.roles:
+                    self.dao.append_sub_to_giveaway(str(this_author.id), 5)
                     stats["luckboost_3"] = False
                     self.dao.update_member_stats(
                         "111772771016515584", str(this_author.id), stats
@@ -60,15 +52,10 @@ class Giveaway(commands.Cog):
                         )
                     )
                 elif regular_role in this_author.roles:
-                    self.dao.append_sub_to_giveaway(str(this_author.id), 1)
-                    self.dao.append_sub_to_giveaway(str(this_author.id), 1)
-                    await ctx.send(
-                        this_author.mention
-                        + " You joined the giveaway for **{}** with **double** winning chance for being regular! The giveaway will end **{}** and you will be notified if you win. Good Luck! :wink:".format(
-                            self.server_config["other"]["giveaway_item"],
-                            self.server_config["other"]["giveaway_deadline"],
-                        )
-                    )
+                    self.dao.append_sub_to_giveaway(str(this_author.id), 2)
+                    await ctx.send(this_author.mention +
+                                       " You joined the giveaway for **{}** with **double** winning chance for being regular! The giveaway will end **{}** and you will be notified if you win. Good Luck! :wink:".format(
+                                           self.server_config["other"]["giveaway_item"], self.server_config["other"]["giveaway_deadline"]))
                 else:
                     self.dao.append_sub_to_giveaway(str(this_author.id), 1)
                     await ctx.send(
