@@ -41,12 +41,26 @@ class SetParser:
 class Memes(commands.Cog):
     def __init__(self, bot: Red):
         self.bot = bot
-        self.running = False
+
+        self.config = Config.get_conf(self, identifier=46772245354364)
+        default_global = {
+            "cost_dank": 25000,
+            "guild_id": 111772771016515584,
+            "role_dank_id": 353238417212964865,
+            "mod_role_id": 117296318052958214,
+            "mega_role_id": 308667119963209749,
+            "giveaway_path": "data/giveaway.json",
+        }
+        self.config.register_global(**default_global)
+
+        self.modpride_running = False
         self.dank_cd = False
         self.races = 0
-        self.cost_dank = 25000
-        guild = self.bot.get_guild(111772771016515584)
-        self.role_dank = guild.get_role(353238417212964865)
+        self.guild = self.bot.get_guild(self.config.guild_id())
+        self.role_dank = self.guild.get_role(self.config.role_dank_id())
+        self.role_mod = self.guild.get_role(self.config.mod_role_id())
+        self.role_mega = self.guild.get_role(self.config.mega_role_id())
+        self.ban_queue = []
         self.rainbowcolors = [
             0xFF0000,
             0xFF0F00,
@@ -169,10 +183,10 @@ class Memes(commands.Cog):
 
         currency_name = await bank.get_currency_name(ctx.guild)
         try:
-            await bank.withdraw_credits(ctx.author, self.cost_dank)
+            await bank.withdraw_credits(ctx.author, self.config.cost_dank())
         except ValueError:
             return await ctx.send(
-                f"You don't have enough {currency_name} (Cost: {self.cost_dank}) {ctx.author.mention}"
+                f"You don't have enough {currency_name} (Cost: {self.config.cost_dank()}) {ctx.author.mention}"
             )
         else:
             await ctx.author.add_roles(self.role_dank)
@@ -180,7 +194,7 @@ class Memes(commands.Cog):
                 "You bought the "
                 + self.role_dank.name
                 + " role for "
-                + str(self.cost_dank)
+                + str(self.config.cost_dank())
                 + " "
                 + currency_name
                 + " "
@@ -191,34 +205,27 @@ class Memes(commands.Cog):
     @checks.mod()
     @commands.command(pass_context=True, no_pm=True)
     async def modpride(self, ctx):
-        if not self.running:
-            self.running = True
-            guild = self.bot.get_guild(111772771016515584)
-            role = guild.get_role(117296318052958214)
-
+        if not self.modpride_running:
+            self.modpride_running = True
             for c in self.rainbowcolors:
                 dcol = discord.Colour(c)
                 await asyncio.sleep(0.2)
-                await role.edit(colour=dcol)
-            await role.edit(colour=discord.Colour(0xE74C3C))
-            self.running = False
+                await self.role_mod.edit(colour=dcol)
+            await self.role_mod.edit(colour=discord.Colour(0xE74C3C))
+            self.modpride_running = False
 
     async def dankcolors(self):
-        # await asyncio.sleep(10)
         self.dank_cd = True
-        guild = self.bot.get_guild(111772771016515584)
-        role = guild.get_role(353238417212964865)
 
-        # while True:
         def r():
             return random.randint(0, 255)
 
         dcol = discord.Colour(int("%02X%02X%02X" % (r(), r(), r()), 16))
-        # await asyncio.sleep(60)
-        await role.edit(colour=dcol)
+        await self.role_dank.edit(colour=dcol)
         await asyncio.sleep(300)
         self.dank_cd = False
 
+    @commands.guild_only()
     @commands.command(pass_context=True, no_pm=True)
     async def dank(self, ctx):
         if self.role_dank in ctx.author.roles:
@@ -255,45 +262,35 @@ class Memes(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def addmegarole(
-        self, ctx: commands.Context, user: discord.Member, *, reason: str = None
+            self, ctx: commands.Context, user: discord.Member, *, reason: str = None
     ):
         """
         """
         author = ctx.author
-        guild = ctx.guild
         if (
-            author.id == 147349764281729024
-            or author.id == 383195095610163200
-            or author.id == 95174017710821376
+                author.id == 147349764281729024
+                or author.id == 383195095610163200
+                or author.id == 95174017710821376
         ):
-            for r in guild.roles:
-                if r.id == 308667119963209749:
-                    megarole = r
-            await ctx.message.mentions[0].add_roles(
-                megarole, reason="Assigned manually by " + author.display_name + ""
-            )
+            await ctx.message.mentions[0].add_roles(self.role_mega,
+                                                    reason="Assigned manually by " + author.display_name + "")
             await ctx.send("Role set")
 
     @commands.command()
     @commands.guild_only()
     async def removemegarole(
-        self, ctx: commands.Context, user: discord.Member, *, reason: str = None
+            self, ctx: commands.Context, user: discord.Member, *, reason: str = None
     ):
         """
         """
         author = ctx.author
-        guild = ctx.guild
         if (
-            author.id == 147349764281729024
-            or author.id == 383195095610163200
-            or author.id == 95174017710821376
+                author.id == 147349764281729024
+                or author.id == 383195095610163200
+                or author.id == 95174017710821376
         ):
-            for r in guild.roles:
-                if r.id == 308667119963209749:
-                    megarole = r
-            await ctx.message.mentions[0].remove_roles(
-                megarole, reason="Removed manually by " + author.display_name + ""
-            )
+            await ctx.message.mentions[0].remove_roles(self.role_mega,
+                                                       reason="Removed manually by " + author.display_name + "")
             await ctx.send("Role removed")
 
     @commands.command(pass_context=True, no_pm=True)
@@ -312,9 +309,9 @@ class Memes(commands.Cog):
             elapsed_time = time.time() - start_time
             await m.edit(
                 content=ctx.message.author.mention
-                + " finished in "
-                + str(round(elapsed_time, 2))
-                + "s"
+                        + " finished in "
+                        + str(round(elapsed_time, 2))
+                        + "s"
             )
             self.races -= 1
         else:
@@ -342,7 +339,7 @@ class Memes(commands.Cog):
     @check_global_setting_admin()
     @commands.command(pass_context=True, no_pm=True)
     async def balanceset(
-        self, ctx: commands.Context, to: discord.Member, creds: SetParser
+            self, ctx: commands.Context, to: discord.Member, creds: SetParser
     ):
         """Set the balance of user's bank account.
         Passing positive and negative values will add/remove currency instead.
@@ -389,7 +386,7 @@ class Memes(commands.Cog):
     @commands.bot_has_permissions(kick_members=True)
     @checks.admin_or_permissions(kick_members=True)
     async def superkick(
-        self, ctx: commands.Context, user: discord.Member, *, reason: str = None
+            self, ctx: commands.Context, user: discord.Member, *, reason: str = None
     ):
         """Kick a user.
         If a reason is specified, it will be the reason that shows up

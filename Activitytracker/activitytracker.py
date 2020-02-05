@@ -1,7 +1,6 @@
 import datetime
 import pprint
 import discord
-import asyncio
 
 from redbot.core.bot import Red
 from redbot.core import commands
@@ -230,7 +229,7 @@ class ActivityTracker(commands.Cog):
 
         for member in self.regular_role.members:
             print("Fetching " + str(member))
-            this_stats = self.dao.get_member_stats(str(self.guild_id), member.id)
+            this_stats = self.dao.get_member_stats(str(self.config.guild_id()), member.id)
             if "activity_stats" in this_stats:
                 ass = this_stats["activity_stats"]
                 now = datetime.datetime.now()

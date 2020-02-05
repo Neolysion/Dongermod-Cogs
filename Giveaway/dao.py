@@ -1,10 +1,10 @@
 import logging
-
 import random
 import datetime
 import json
 import os
 import pymysql
+from redbot.core import Config
 
 from pymysql import MySQLError
 
@@ -15,34 +15,41 @@ class DAO:
     """Custom Dongermod DAO"""
 
     def __init__(self):
-        self.sql_schema_file = "../Activitytracker/dongermod_schema.sql"
-        self.server_default_config_file = (
-            "../Activitytracker/default_server_config.json"
-        )
-        self.member_stats_default_config_file = (
-            "../Activitytracker/default_member_stats.json"
-        )
+        self.config = Config.get_conf(self, identifier=46772245354364)
+        default_global = {
+            "sql_schema_file": "../Activitytracker/dongermod_schema.sql",
+            "server_default_config_file": "../Activitytracker/default_server_config.json",
+            "default_member_stats_template": "../Activitytracker/default_member_stats.json",
+            "giveaway_path": "data/giveaway.json",
+            "mysql": {
+                "host": "127.0.0.1",
+                "port": 3306,
+                "user": "user",
+                "password": "pw",
+                "db": "dongermod",
+            }
+        }
+        self.config.register_global(**default_global)
         self.connection = self.create_connection()
-        self.giveaway_path = "data/giveaway.json"
 
     def create_connection(self):
         con = pymysql.connect(
-            host="127.0.0.1",
-            port=3306,
-            user="user",
-            password="pw",
-            db="dongermod",
+            host=self.config.mysql.host(),
+            port=self.config.mysql.port(),
+            user=self.config.mysql.user(),
+            password=self.config.mysql.password(),
+            db=self.config.mysql.db(),
             autocommit=True,
         )
         return con
 
     def get_server_config_template(self):
-        with open(self.server_default_config_file, "r") as json_template_file:
+        with open(self.config.server_default_config_file(), "r") as json_template_file:
             defaut_conf = json.load(json_template_file)
         return defaut_conf
 
     def get_member_stats_template(self):
-        with open(self.member_stats_default_config_file, "r") as json_template_file:
+        with open(self.config.default_member_stats_template(), "r") as json_template_file:
             defaut_conf = json.load(json_template_file)
         return defaut_conf
 
@@ -119,7 +126,7 @@ class DAO:
     def get_sub_in_giveaway(self, user_id):
         list = []
         try:
-            with open(self.giveaway_path) as data_file:
+            with open(self.config.giveaway_path()) as data_file:
                 lines = data_file.readlines()
                 for l in lines:
                     list.append(l)
@@ -131,24 +138,24 @@ class DAO:
             return False
 
     def wipe_giveaway(self):
-        if os.path.exists(self.giveaway_path):
+        if os.path.exists(self.config.giveaway_path()):
             os.rename(
-                self.giveaway_path,
+                self.config.giveaway_path(),
                 "data/giveaway_"
                 + str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
                 + ".json",
             )
-        open(self.giveaway_path, "w+").close()
+        open(self.config.giveaway_path(), "w+").close()
 
-    def append_sub_to_giveaway(self, user_id, tickets):
-        with open(self.giveaway_path, "a") as myfile:
+    def append_sub_to_giveaway(self, user_id, entries):
+        with open(self.config.giveaway_path(), "a") as myfile:
             for _ in range(entries):
                 myfile.write(user_id + "\n")
 
     def get_random_sub_from_giveaway(self):
         list = []
         try:
-            with open(self.giveaway_path) as data_file:
+            with open(self.config.giveaway_path()) as data_file:
                 lines = data_file.readlines()
                 for line in lines:
                     line = line.replace("\n", "")

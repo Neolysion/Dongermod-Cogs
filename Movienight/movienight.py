@@ -16,7 +16,7 @@ import urllib
 from datetime import datetime
 
 from redbot.core.bot import Red
-from redbot.core import commands, checks
+from redbot.core import commands, checks, Config
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -57,25 +57,25 @@ class AkamaiTokenConfig:
 
 class AkamaiToken:
     def __init__(
-        self,
-        token_type=None,
-        token_name="hdnts",
-        ip=None,
-        start_time="now",
-        end_time=0,
-        window_seconds=None,
-        url=None,
-        acl=None,
-        key=None,
-        payload=None,
-        algorithm="sha256",
-        salt=None,
-        session_id=None,
-        field_delimiter=None,
-        acl_delimiter=None,
-        escape_early=False,
-        escape_early_upper=False,
-        verbose=False,
+            self,
+            token_type=None,
+            token_name="hdnts",
+            ip=None,
+            start_time="now",
+            end_time=0,
+            window_seconds=None,
+            url=None,
+            acl=None,
+            key=None,
+            payload=None,
+            algorithm="sha256",
+            salt=None,
+            session_id=None,
+            field_delimiter=None,
+            acl_delimiter=None,
+            escape_early=False,
+            escape_early_upper=False,
+            verbose=False,
     ):
         self._token_type = token_type
         self._token_name = token_name
@@ -191,7 +191,7 @@ class AkamaiToken:
                     # If we have a duration window without a start time,
                     # calculate the end time starting from the current time.
                     self._end_time = (
-                        int(time.mktime(time.gmtime())) + self._window_seconds
+                            int(time.mktime(time.gmtime())) + self._window_seconds
                     )
                 else:
                     self._end_time = self._start_time + self._window_seconds
@@ -209,19 +209,19 @@ class AkamaiToken:
             )
 
         if (
-            (self._acl is None and self._url is None)
-            or self._acl is not None
-            and self._url is not None
-            and (len(self._acl) <= 0)
-            and (len(self._url) <= 0)
+                (self._acl is None and self._url is None)
+                or self._acl is not None
+                and self._url is not None
+                and (len(self._acl) <= 0)
+                and (len(self._url) <= 0)
         ):
             raise AkamaiTokenError("You must provide a URL or an ACL.")
 
         if (
-            self._acl is not None
-            and self._url is not None
-            and (len(self._acl) > 0)
-            and (len(self._url) > 0)
+                self._acl is not None
+                and self._url is not None
+                and (len(self._acl) > 0)
+                and (len(self._url) > 0)
         ):
             raise AkamaiTokenError("You must provide a URL OR an ACL, " "not both.")
 
@@ -319,6 +319,7 @@ Generating token..."""
         return new_token
 
 
+## This is a workaround for an asyncio bug in python 3.7.x
 def ignore_aiohttp_ssl_eror(loop, aiohttpversion="3.5.4"):
     """Ignore aiohttp #3535 issue with SSL data after close
 
@@ -347,12 +348,12 @@ def ignore_aiohttp_ssl_eror(loop, aiohttpversion="3.5.4"):
             exception = context.get("exception")
             protocol = context.get("protocol")
             if (
-                isinstance(exception, ssl.SSLError)
-                and exception.reason == "KRB5_S_INIT"
-                and isinstance(protocol, asyncio.sslproto.SSLProtocol)
-                and isinstance(
-                    protocol._app_protocol, aiohttp.client_proto.ResponseHandler
-                )
+                    isinstance(exception, ssl.SSLError)
+                    and exception.reason == "KRB5_S_INIT"
+                    and isinstance(protocol, asyncio.sslproto.SSLProtocol)
+                    and isinstance(
+                protocol._app_protocol, aiohttp.client_proto.ResponseHandler
+            )
             ):
                 if loop.get_debug():
                     asyncio.log.logger.debug("Ignoring aiohttp SSL KRB5_S_INIT error")
@@ -371,34 +372,35 @@ class Movienight(commands.Cog):
     def __init__(self, bot: Red):
         self.bot = bot
 
-        # Wowza API config
-        # ---------------------------------------------------
-        self.wsc_access_key = "..."
-        self.wsc_api_key = "..."
-        self.wsc_host = "https://api.cloud.wowza.com/api/"
-        self.wsc_version = "v1.4"
+        self.config = Config.get_conf(self, identifier=664568768108964)
+        default_global = {
+            # Wowza API config
+            # ---------------------------------------------------
+            "wsc_access_key": "...",
+            "wsc_api_key": "...",
+            "wsc_host": "https://api.cloud.wowza.com/api/",
+            "wsc_version": "v1.4",
 
-        # Wowza CDN stream config
-        # ---------------------------------------------------
-        self.expiration_time = 10800
-        self.live_stream_id = "..."
-        self.trusted_shared_secret = "..."
+            # Wowza CDN stream config
+            # ---------------------------------------------------
+            "expiration_time": 10800,
+            "live_stream_id": "...",
+            "trusted_shared_secret": "...",
 
-        # Player hosting
-        # ---------------------------------------------------
-        self.player_domain = "movie.admiralbulldog.live"
-        self.player_port = "8000"
+            # Player hosting
+            # ---------------------------------------------------
+            "player_domain": "movie.admiralbulldog.live",
+            "player_port": "8000",
 
-        # Discord bot settings
-        # ---------------------------------------------------
-        self.logo_url = "https://images.all-free-download.com/images/graphiclarge/movie_logo_design_text_reel_filmstrip_icons_decoration_6829232.jpg"
-        self.alert_channel_id = 588693719646076929
-        self.bd_id = 111601428375601152
-        self.bo_id = 95174017710821376
-        self.he_id = 147349764281729024
-
-        # Program vars, don't touch
-        # ----------------------------------------------------
+            # Discord bot settings
+            # ---------------------------------------------------
+            "logo_url": "https://images.all-free-download.com/images/graphiclarge/movie_logo_design_text_reel_filmstrip_icons_decoration_6829232.jpg",
+            "alert_channel_id": 588693719646076929,
+            "bd_id": 111601428375601152,
+            "bo_id": 95174017710821376,
+            "he_id": 147349764281729024
+        }
+        self.config.register_global(**default_global)
 
         self.ull_stream_running = False
         self.cdn_stream_running = False
@@ -420,10 +422,10 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.wsc_api_key,
-                "wsc-access-key": self.wsc_access_key,
+                "wsc-api-key": self.config.wsc_api_key(),
+                "wsc-access-key": self.config.wsc_access_key(),
             },
-            "url": "{}{}/stream_targets/ull".format(self.wsc_host, self.wsc_version),
+            "url": "{}{}/stream_targets/ull".format(self.config.wsc_host(), self.config.wsc_version()),
         }
         return request
 
@@ -431,11 +433,11 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.wsc_api_key,
-                "wsc-access-key": self.wsc_access_key,
+                "wsc-api-key": self.config.wsc_api_key(),
+                "wsc-access-key": self.config.wsc_access_key(),
             },
             "url": "{}{}/stream_targets/ull/{}".format(
-                self.wsc_host, self.wsc_version, target_id
+                self.config.wsc_host(), self.config.wsc_version(), target_id
             ),
         }
         return request
@@ -444,11 +446,11 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.wsc_api_key,
-                "wsc-access-key": self.wsc_access_key,
+                "wsc-api-key": self.config.wsc_api_key(),
+                "wsc-access-key": self.config.wsc_access_key(),
             },
             "url": "{}{}/live_streams/{}/state".format(
-                self.wsc_host, self.wsc_version, target_id
+                self.config.wsc_host(), self.config.wsc_version(), target_id
             ),
         }
         return request
@@ -464,7 +466,7 @@ class Movienight(commands.Cog):
             if latest_target is None:
                 latest_target = target
             elif datetime.strptime(
-                latest_target["created_at"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                    latest_target["created_at"], "%Y-%m-%dT%H:%M:%S.%fZ"
             ) < datetime.strptime(target["created_at"], "%Y-%m-%dT%H:%M:%S.%fZ"):
                 latest_target = target
         if latest_target:
@@ -473,7 +475,7 @@ class Movienight(commands.Cog):
             return None
 
     def fetch_cdn_stream_state(self):
-        req = self.create_stream_state_request(self.live_stream_id)
+        req = self.create_stream_state_request(self.config.live_stream_id())
         res = requests.get(req["url"], headers=req["header"])
         jres = json.loads(res.content)
         return jres
@@ -504,13 +506,13 @@ class Movienight(commands.Cog):
                         + ")"
                     )
 
-                    c = self.bot.get_channel(self.alert_channel_id)
+                    c = self.bot.get_channel(self.config.alert_channel_id())
                     embed = discord.Embed(
                         title="Movienight is online!",
                         color=0x0600FF,
                         description="Use the normal player if you are having problems with the low latency one.",
                     )
-                    embed.set_thumbnail(url=self.logo_url)
+                    embed.set_thumbnail(url=self.config.logo_url())
                     embed.add_field(
                         name="Web (low latency):",
                         value="https://movie.admiralbulldog.live/ull_player.html?key={}".format(
@@ -544,13 +546,13 @@ class Movienight(commands.Cog):
                     self.cdn_playback_key = self.generate_cdn_token()
                     print(self.cdn_playback_key)
 
-                    c = self.bot.get_channel(self.alert_channel_id)
+                    c = self.bot.get_channel(self.config.alert_channel_id())
                     embed = discord.Embed(
                         title="Movienight is about to start!",
                         color=0x0600FF,
                         description="Use the following link to watch: ",
                     )
-                    embed.set_thumbnail(url=self.logo_url)
+                    embed.set_thumbnail(url=self.config.logo_url())
                     embed.add_field(
                         name="Web:",
                         value="https://movie.admiralbulldog.live/cdn_player.html?key={}".format(
@@ -569,9 +571,9 @@ class Movienight(commands.Cog):
     def generate_cdn_token(self):
         try:
             generator = AkamaiToken(
-                window_seconds=self.expiration_time,
+                window_seconds=self.config.expiration_time(),
                 acl="*",
-                key=self.trusted_shared_secret,
+                key=self.config.trusted_shared_secret(),
                 verbose=True,
             )
             token = generator.generateToken()
@@ -596,8 +598,8 @@ class Movienight(commands.Cog):
     @commands.command(pass_context=True, no_pm=True, help="Shows the movienight links")
     async def movienight(self, ctx):
         if (
-            not ctx.channel.id == 588693719646076929
-            and not ctx.channel.id == 557634996743962625
+                not ctx.channel.id == 588693719646076929
+                and not ctx.channel.id == 557634996743962625
         ):
             return
 
@@ -607,7 +609,7 @@ class Movienight(commands.Cog):
                 color=0x0600FF,
                 description="Try the normal player if you are having problems with the low latency one.",
             )
-            embed.set_thumbnail(url=self.logo_url)
+            embed.set_thumbnail(url=self.config.logo_url())
             embed.add_field(
                 name="Web (low latency):",
                 value="https://movie.admiralbulldog.live/ull_player.html?key={}".format(
@@ -629,7 +631,7 @@ class Movienight(commands.Cog):
                 color=0x0600FF,
                 description="Use the following link to watch: ",
             )
-            embed.set_thumbnail(url=self.logo_url)
+            embed.set_thumbnail(url=self.config.logo_url())
             embed.add_field(
                 name="Web:",
                 value="https://movie.admiralbulldog.live/cdn_player.html?key={}".format(
@@ -657,9 +659,9 @@ class Movienight(commands.Cog):
     )
     async def ull(self, ctx):
         if (
-            self.bd_id == ctx.author.id
-            or self.bo_id == ctx.author.id
-            or self.he_id == ctx.author.id
+                self.config.bd_id() == ctx.author.id
+                or self.config.bo_id() == ctx.author.id
+                or self.config.he_id() == ctx.author.id
         ):
 
             if not ctx.author.dm_channel:
@@ -684,9 +686,9 @@ class Movienight(commands.Cog):
     )
     async def cdn(self, ctx):
         if (
-            self.bd_id == ctx.author.id
-            or self.bo_id == ctx.author.id
-            or self.he_id == ctx.author.id
+                self.config.bd_id() == ctx.author.id
+                or self.config.bo_id() == ctx.author.id
+                or self.config.he_id() == ctx.author.id
         ):
 
             if not ctx.author.dm_channel:
@@ -720,8 +722,8 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.wsc_api_key,
-                "wsc-access-key": self.wsc_access_key,
+                "wsc-api-key": self.config.wsc_api_key(),
+                "wsc-access-key": self.config.wsc_access_key(),
             },
             "payload": {
                 "stream_target_ull": {
@@ -730,7 +732,7 @@ class Movienight(commands.Cog):
                     "enable_hls": True,
                 }
             },
-            "url": "{}{}/stream_targets/ull".format(self.wsc_host, self.wsc_version),
+            "url": "{}{}/stream_targets/ull".format(self.config.wsc_host(), self.config.wsc_version()),
         }
         return request
 
@@ -738,11 +740,11 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.wsc_api_key,
-                "wsc-access-key": self.wsc_access_key,
+                "wsc-api-key": self.config.wsc_api_key(),
+                "wsc-access-key": self.config.wsc_access_key(),
             },
             "url": "{}{}/transcoders/{}/start".format(
-                self.wsc_host, self.wsc_version, transcoder_id
+                self.config.wsc_host(), self.config.wsc_version(), transcoder_id
             ),
         }
         return request
@@ -751,11 +753,11 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.wsc_api_key,
-                "wsc-access-key": self.wsc_access_key,
+                "wsc-api-key": self.config.wsc_api_key(),
+                "wsc-access-key": self.config.wsc_access_key(),
             },
             "url": "{}{}/transcoders/{}/state".format(
-                self.wsc_host, self.wsc_version, transcoder_id
+                self.config.wsc_host(), self.config.wsc_version(), transcoder_id
             ),
         }
         return request
