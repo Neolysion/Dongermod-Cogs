@@ -2,20 +2,20 @@ import json
 import pymysql
 import logging
 
+from os.path import dirname, abspath
 from redbot.core import Config
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("red.mod")
+pd = dirname(dirname(abspath(__file__)))
 
 
 class DAO:
     """Custom Dongermod DAO"""
 
-    def __init__(self):
-        self.config = Config.get_conf(self, identifier=46772245354364)
+    def __init__(self, cog_instance):
+        self.config = Config.get_conf(cog_instance, identifier=46772245354364, force_registration=True)
         default_global = {
-            "sql_schema_file": "../Activitytracker/dongermod_schema.sql",
-            "server_default_config_file": "../Activitytracker/default_server_config.json",
-            "default_member_stats_template": "../Activitytracker/default_member_stats.json",
+            "default_member_stats_template": "/Activitytracker/default_member_stats.json",
             "giveaway_path": "data/giveaway.json",
             "mysql": {
                 "host": "127.0.0.1",
@@ -26,21 +26,36 @@ class DAO:
             }
         }
         self.config.register_global(**default_global)
-        self.connection = self.create_connection()
 
-    def create_connection(self):
+        self.default_member_stats_template = None
+        self.mysql_cfg = {}
+        self.connection = None
+        self.ready = False
+
+    async def on_ready(self):
+        await self.load_config()
+        self.create_mysql_connection()
+
+    async def load_config(self):
+        self.default_member_stats_template = pd + await self.config.default_member_stats_template()
+        self.mysql_cfg = await self.config.mysql()
+
+    def create_mysql_connection(self):
+        log.info("AA - DAO Connecting...")
         con = pymysql.connect(
-            host=self.config.mysql.host(),
-            port=self.config.mysql.port(),
-            user=self.config.mysql.user(),
-            password=self.config.mysql.password(),
-            db=self.config.mysql.db(),
+            host=self.mysql_cfg['host'],
+            port=int(self.mysql_cfg['port']),
+            user=self.mysql_cfg['user'],
+            password=self.mysql_cfg['password'],
+            db=self.mysql_cfg['db'],
             autocommit=True,
         )
-        return con
+        self.connection = con
+        self.ready = True
+        log.info("AA - DAO Connected")
 
     def get_member_stats_template(self):
-        with open(self.config.default_member_stats_template(), "r") as json_template_file:
+        with open(self.default_member_stats_template, "r") as json_template_file:
             defaut_conf = json.load(json_template_file)
         return defaut_conf
 

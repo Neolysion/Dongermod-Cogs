@@ -1,8 +1,11 @@
 import asyncio
 import re
+import logging
 
 from redbot.core.bot import Red
 from redbot.core import checks, Config, commands
+
+log = logging.getLogger("red.mod")
 
 
 class Giveaway(commands.Cog):
@@ -11,6 +14,11 @@ class Giveaway(commands.Cog):
         self.dao = dao
         self.server_config = self.load_server_config()
         self.lock = False
+        self.ready = False
+
+    async def on_ready(self):
+        await self.dao.on_ready()
+        self.ready = True
 
     @commands.guild_only()
     @commands.command(pass_context=True, no_pm=True, help="Join the current giveaway")
@@ -34,8 +42,8 @@ class Giveaway(commands.Cog):
             return
 
         if (
-            self.server_config["other"]["giveaway_item"]
-            and self.server_config["other"]["giveaway_deadline"]
+                self.server_config["other"]["giveaway_item"]
+                and self.server_config["other"]["giveaway_deadline"]
         ):
             if not self.dao.get_sub_in_giveaway(str(this_author.id)):
                 if "luckboost_3" in stats and stats["luckboost_3"] and regular_role in this_author.roles:
@@ -54,8 +62,9 @@ class Giveaway(commands.Cog):
                 elif regular_role in this_author.roles:
                     self.dao.append_sub_to_giveaway(str(this_author.id), 2)
                     await ctx.send(this_author.mention +
-                                       " You joined the giveaway for **{}** with **double** winning chance for being regular! The giveaway will end **{}** and you will be notified if you win. Good Luck! :wink:".format(
-                                           self.server_config["other"]["giveaway_item"], self.server_config["other"]["giveaway_deadline"]))
+                                   " You joined the giveaway for **{}** with **double** winning chance for being regular! The giveaway will end **{}** and you will be notified if you win. Good Luck! :wink:".format(
+                                       self.server_config["other"]["giveaway_item"],
+                                       self.server_config["other"]["giveaway_deadline"]))
                 else:
                     self.dao.append_sub_to_giveaway(str(this_author.id), 1)
                     await ctx.send(
@@ -77,8 +86,8 @@ class Giveaway(commands.Cog):
     @commands.command(pass_context=True, no_pm=True, help="Start a new giveaway")
     async def startgiveaway(self, ctx):
         if (
-            self.server_config["other"]["giveaway_item"]
-            and self.server_config["other"]["giveaway_deadline"]
+                self.server_config["other"]["giveaway_item"]
+                and self.server_config["other"]["giveaway_deadline"]
         ):
             await ctx.send(
                 "There is already a giveaway running. Please use !wipegiveaway before you start a new one. (Don't forget to chose a winner before you end!)"
@@ -120,8 +129,8 @@ class Giveaway(commands.Cog):
     async def giveawaywinner(self, ctx):
         print("Fetching giveaway winner...")
         if (
-            self.server_config["other"]["giveaway_item"]
-            and self.server_config["other"]["giveaway_deadline"]
+                self.server_config["other"]["giveaway_item"]
+                and self.server_config["other"]["giveaway_deadline"]
         ):
             win_user = None
             while not win_user:
