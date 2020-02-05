@@ -42,7 +42,7 @@ class Memes(commands.Cog):
     def __init__(self, bot: Red):
         self.bot = bot
 
-        self.config = Config.get_conf(self, identifier=46772245354364)
+        self.config = Config.get_conf(self, identifier=46772245354364, force_registration=True)
         default_global = {
             "cost_dank": 25000,
             "guild_id": 111772771016515584,
@@ -56,10 +56,11 @@ class Memes(commands.Cog):
         self.modpride_running = False
         self.dank_cd = False
         self.races = 0
-        self.guild = self.bot.get_guild(self.config.guild_id())
-        self.role_dank = self.guild.get_role(self.config.role_dank_id())
-        self.role_mod = self.guild.get_role(self.config.mod_role_id())
-        self.role_mega = self.guild.get_role(self.config.mega_role_id())
+        self.guild = None
+        self.role_dank = None
+        self.role_mod = None
+        self.role_mega = None
+        self.ready = False
         self.ban_queue = []
         self.rainbowcolors = [
             0xFF0000,
@@ -163,6 +164,13 @@ class Memes(commands.Cog):
             0xFF001F,
             0xFF000F,
         ]
+
+    async def on_ready(self):
+        self.guild = self.bot.get_guild(await self.config.guild_id())
+        self.role_dank = self.guild.get_role(await self.config.role_dank_id())
+        self.role_mod = self.guild.get_role(await self.config.mod_role_id())
+        self.role_mega = self.guild.get_role(await self.config.mega_role_id())
+        self.ready = True
 
     @commands.group(name="buy", autohelp=True)
     async def buy(self, ctx: commands.Context):

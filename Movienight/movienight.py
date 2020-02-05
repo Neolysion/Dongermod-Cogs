@@ -12,6 +12,7 @@ import os
 import re
 import time
 import urllib
+import logging
 
 from datetime import datetime
 
@@ -19,6 +20,7 @@ from redbot.core.bot import Red
 from redbot.core import commands, checks, Config
 
 pp = pprint.PrettyPrinter(indent=4)
+log = logging.getLogger("red.mod")
 
 # Force the local timezone to be GMT.
 os.environ["TZ"] = "GMT"
@@ -372,7 +374,7 @@ class Movienight(commands.Cog):
     def __init__(self, bot: Red):
         self.bot = bot
 
-        self.config = Config.get_conf(self, identifier=664568768108964)
+        self.config = Config.get_conf(self, identifier=897857435265234, force_registration=True)
         default_global = {
             # Wowza API config
             # ---------------------------------------------------
@@ -402,6 +404,22 @@ class Movienight(commands.Cog):
         }
         self.config.register_global(**default_global)
 
+        self.wsc_access_key = None
+        self.wsc_api_key = None
+        self.wsc_host = None
+        self.wsc_version = None
+        self.expiration_time = None
+        self.live_stream_id = None
+        self.trusted_shared_secret = None
+        self.player_domain = None
+        self.player_port = None
+        self.logo_url = None
+        self.alert_channel_id = None
+        self.bd_id = None
+        self.bo_id = None
+        self.he_id = None
+        self.ready = False
+
         self.ull_stream_running = False
         self.cdn_stream_running = False
         self.ull_playback_key = ""
@@ -410,6 +428,24 @@ class Movienight(commands.Cog):
         ignore_aiohttp_ssl_eror(self.bot.loop)
 
         asyncio.ensure_future(self.stream_check())
+
+    async def on_ready(self):
+        self.wsc_access_key = self.bot.get_guild(await self.config.wsc_access_key())
+        self.wsc_api_key = self.bot.get_guild(await self.config.wsc_api_key())
+        self.wsc_host = self.bot.get_guild(await self.config.wsc_host())
+        self.wsc_version = self.bot.get_guild(await self.config.wsc_version())
+        self.expiration_time = self.bot.get_guild(await self.config.expiration_time())
+        self.live_stream_id = self.bot.get_guild(await self.config.live_stream_id())
+        self.trusted_shared_secret = self.bot.get_guild(await self.config.trusted_shared_secret())
+        self.player_domain = self.bot.get_guild(await self.config.player_domain())
+        self.player_port = self.bot.get_guild(await self.config.player_port())
+        self.logo_url = self.bot.get_guild(await self.config.logo_url())
+        self.alert_channel_id = self.bot.get_guild(await self.config.alert_channel_id())
+        self.bd_id = self.bot.get_guild(await self.config.bd_id())
+        self.bo_id = self.bot.get_guild(await self.config.bo_id())
+        self.he_id = self.bot.get_guild(await self.config.he_id())
+        self.config.wsc_access_key.set("test")
+        self.ready = True
 
     def __unload(self):
         pass
@@ -422,10 +458,10 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.config.wsc_api_key(),
-                "wsc-access-key": self.config.wsc_access_key(),
+                "wsc-api-key": self.wsc_api_key,
+                "wsc-access-key": self.wsc_access_key,
             },
-            "url": "{}{}/stream_targets/ull".format(self.config.wsc_host(), self.config.wsc_version()),
+            "url": "{}{}/stream_targets/ull".format(self.wsc_host, self.wsc_version),
         }
         return request
 
@@ -433,11 +469,11 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.config.wsc_api_key(),
-                "wsc-access-key": self.config.wsc_access_key(),
+                "wsc-api-key": self.wsc_api_key,
+                "wsc-access-key": self.wsc_access_key,
             },
             "url": "{}{}/stream_targets/ull/{}".format(
-                self.config.wsc_host(), self.config.wsc_version(), target_id
+                self.wsc_host, self.wsc_version, target_id
             ),
         }
         return request
@@ -446,11 +482,11 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.config.wsc_api_key(),
-                "wsc-access-key": self.config.wsc_access_key(),
+                "wsc-api-key": self.wsc_api_key,
+                "wsc-access-key": self.wsc_access_key,
             },
             "url": "{}{}/live_streams/{}/state".format(
-                self.config.wsc_host(), self.config.wsc_version(), target_id
+                self.wsc_host, self.wsc_version, target_id
             ),
         }
         return request
@@ -475,7 +511,7 @@ class Movienight(commands.Cog):
             return None
 
     def fetch_cdn_stream_state(self):
-        req = self.create_stream_state_request(self.config.live_stream_id())
+        req = self.create_stream_state_request(self.live_stream_id)
         res = requests.get(req["url"], headers=req["header"])
         jres = json.loads(res.content)
         return jres
@@ -506,13 +542,13 @@ class Movienight(commands.Cog):
                         + ")"
                     )
 
-                    c = self.bot.get_channel(self.config.alert_channel_id())
+                    c = self.bot.get_channel(self.alert_channel_id)
                     embed = discord.Embed(
                         title="Movienight is online!",
                         color=0x0600FF,
                         description="Use the normal player if you are having problems with the low latency one.",
                     )
-                    embed.set_thumbnail(url=self.config.logo_url())
+                    embed.set_thumbnail(url=self.logo_url)
                     embed.add_field(
                         name="Web (low latency):",
                         value="https://movie.admiralbulldog.live/ull_player.html?key={}".format(
@@ -546,13 +582,13 @@ class Movienight(commands.Cog):
                     self.cdn_playback_key = self.generate_cdn_token()
                     print(self.cdn_playback_key)
 
-                    c = self.bot.get_channel(self.config.alert_channel_id())
+                    c = self.bot.get_channel(self.alert_channel_id)
                     embed = discord.Embed(
                         title="Movienight is about to start!",
                         color=0x0600FF,
                         description="Use the following link to watch: ",
                     )
-                    embed.set_thumbnail(url=self.config.logo_url())
+                    embed.set_thumbnail(url=self.logo_url)
                     embed.add_field(
                         name="Web:",
                         value="https://movie.admiralbulldog.live/cdn_player.html?key={}".format(
@@ -571,9 +607,9 @@ class Movienight(commands.Cog):
     def generate_cdn_token(self):
         try:
             generator = AkamaiToken(
-                window_seconds=self.config.expiration_time(),
+                window_seconds=self.expiration_time,
                 acl="*",
-                key=self.config.trusted_shared_secret(),
+                key=self.trusted_shared_secret,
                 verbose=True,
             )
             token = generator.generateToken()
@@ -609,7 +645,7 @@ class Movienight(commands.Cog):
                 color=0x0600FF,
                 description="Try the normal player if you are having problems with the low latency one.",
             )
-            embed.set_thumbnail(url=self.config.logo_url())
+            embed.set_thumbnail(url=self.logo_url)
             embed.add_field(
                 name="Web (low latency):",
                 value="https://movie.admiralbulldog.live/ull_player.html?key={}".format(
@@ -631,7 +667,7 @@ class Movienight(commands.Cog):
                 color=0x0600FF,
                 description="Use the following link to watch: ",
             )
-            embed.set_thumbnail(url=self.config.logo_url())
+            embed.set_thumbnail(url=self.logo_url)
             embed.add_field(
                 name="Web:",
                 value="https://movie.admiralbulldog.live/cdn_player.html?key={}".format(
@@ -659,9 +695,9 @@ class Movienight(commands.Cog):
     )
     async def ull(self, ctx):
         if (
-                self.config.bd_id() == ctx.author.id
-                or self.config.bo_id() == ctx.author.id
-                or self.config.he_id() == ctx.author.id
+                self.bd_id == ctx.author.id
+                or self.bo_id == ctx.author.id
+                or self.he_id == ctx.author.id
         ):
 
             if not ctx.author.dm_channel:
@@ -686,9 +722,9 @@ class Movienight(commands.Cog):
     )
     async def cdn(self, ctx):
         if (
-                self.config.bd_id() == ctx.author.id
-                or self.config.bo_id() == ctx.author.id
-                or self.config.he_id() == ctx.author.id
+                self.bd_id == ctx.author.id
+                or self.bo_id == ctx.author.id
+                or self.he_id == ctx.author.id
         ):
 
             if not ctx.author.dm_channel:
@@ -722,8 +758,8 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.config.wsc_api_key(),
-                "wsc-access-key": self.config.wsc_access_key(),
+                "wsc-api-key": self.wsc_api_key,
+                "wsc-access-key": self.wsc_access_key,
             },
             "payload": {
                 "stream_target_ull": {
@@ -732,7 +768,7 @@ class Movienight(commands.Cog):
                     "enable_hls": True,
                 }
             },
-            "url": "{}{}/stream_targets/ull".format(self.config.wsc_host(), self.config.wsc_version()),
+            "url": "{}{}/stream_targets/ull".format(self.wsc_host, self.wsc_version),
         }
         return request
 
@@ -740,11 +776,11 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.config.wsc_api_key(),
-                "wsc-access-key": self.config.wsc_access_key(),
+                "wsc-api-key": self.wsc_api_key,
+                "wsc-access-key": self.wsc_access_key,
             },
             "url": "{}{}/transcoders/{}/start".format(
-                self.config.wsc_host(), self.config.wsc_version(), transcoder_id
+                self.wsc_host, self.wsc_version, transcoder_id
             ),
         }
         return request
@@ -753,11 +789,11 @@ class Movienight(commands.Cog):
         request = {
             "header": {
                 "Content-Type": "application/json",
-                "wsc-api-key": self.config.wsc_api_key(),
-                "wsc-access-key": self.config.wsc_access_key(),
+                "wsc-api-key": self.wsc_api_key,
+                "wsc-access-key": self.wsc_access_key,
             },
             "url": "{}{}/transcoders/{}/state".format(
-                self.config.wsc_host(), self.config.wsc_version(), transcoder_id
+                self.wsc_host, self.wsc_version, transcoder_id
             ),
         }
         return request

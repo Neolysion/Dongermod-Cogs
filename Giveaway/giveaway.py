@@ -12,12 +12,17 @@ class Giveaway(commands.Cog):
     def __init__(self, bot: Red, dao):
         self.bot = bot
         self.dao = dao
-        self.server_config = self.load_server_config()
+        self.config = Config.get_conf(self, identifier=835127642323413791, force_registration=True)
+        default_global = {
+        }
+        self.config.register_global(**default_global)
+        self.server_config = None
         self.lock = False
         self.ready = False
 
     async def on_ready(self):
         await self.dao.on_ready()
+        self.server_config = self.load_server_config()
         self.ready = True
 
     @commands.guild_only()

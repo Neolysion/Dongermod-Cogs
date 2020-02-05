@@ -17,7 +17,7 @@ class DAO:
     """Custom Dongermod DAO"""
 
     def __init__(self):
-        self.config = Config.get_conf(self, identifier=46772245354364)
+        self.config = Config.get_conf(self, identifier=1453876245354364, force_registration=True)
         default_global = {
             "server_default_config_file": "/Giveaway/default_server_config.json",
             "default_member_stats_template": "/Activitytracker/default_member_stats.json",
@@ -47,7 +47,7 @@ class DAO:
     async def load_config(self):
         self.default_member_stats_template = pd + await self.config.default_member_stats_template()
         self.server_default_config_file = pd + await self.config.server_default_config_file()
-        self.giveaway_path = pd + await self.config.giveaway_path()
+        self.giveaway_path = os.path.dirname(os.path.dirname(pd)) + await self.config.giveaway_path()
         self.mysql_cfg = await self.config.mysql()
 
     def create_mysql_connection(self):
