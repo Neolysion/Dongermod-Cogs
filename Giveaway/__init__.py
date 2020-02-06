@@ -5,5 +5,4 @@ from .dao import DAO
 def setup(bot):
     n = Giveaway(bot, DAO())
     bot.add_cog(n)
-    bot.add_listener(n.on_ready, "on_GA_ready")
-    bot.dispatch("GA_ready")
+    bot.add_listener(n.on_ready, "on_ready")
