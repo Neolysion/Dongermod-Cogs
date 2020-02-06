@@ -427,25 +427,24 @@ class Movienight(commands.Cog):
 
         ignore_aiohttp_ssl_eror(self.bot.loop)
 
-        asyncio.ensure_future(self.stream_check())
-
     async def on_ready(self):
-        self.wsc_access_key = self.bot.get_guild(await self.config.wsc_access_key())
-        self.wsc_api_key = self.bot.get_guild(await self.config.wsc_api_key())
-        self.wsc_host = self.bot.get_guild(await self.config.wsc_host())
-        self.wsc_version = self.bot.get_guild(await self.config.wsc_version())
-        self.expiration_time = self.bot.get_guild(await self.config.expiration_time())
-        self.live_stream_id = self.bot.get_guild(await self.config.live_stream_id())
-        self.trusted_shared_secret = self.bot.get_guild(await self.config.trusted_shared_secret())
-        self.player_domain = self.bot.get_guild(await self.config.player_domain())
-        self.player_port = self.bot.get_guild(await self.config.player_port())
-        self.logo_url = self.bot.get_guild(await self.config.logo_url())
-        self.alert_channel_id = self.bot.get_guild(await self.config.alert_channel_id())
-        self.bd_id = self.bot.get_guild(await self.config.bd_id())
-        self.bo_id = self.bot.get_guild(await self.config.bo_id())
-        self.he_id = self.bot.get_guild(await self.config.he_id())
-        self.config.wsc_access_key.set("test")
+        self.wsc_access_key = await self.config.wsc_access_key()
+        self.wsc_api_key = await self.config.wsc_api_key()
+        self.wsc_host = await self.config.wsc_host()
+        self.wsc_version = await self.config.wsc_version()
+        self.expiration_time = await self.config.expiration_time()
+        self.live_stream_id = await self.config.live_stream_id()
+        self.trusted_shared_secret = await self.config.trusted_shared_secret()
+        self.player_domain = await self.config.player_domain()
+        self.player_port = await self.config.player_port()
+        self.logo_url = await self.config.logo_url()
+        self.alert_channel_id = await self.config.alert_channel_id()
+        self.bd_id = await self.config.bd_id()
+        self.bo_id = await self.config.bo_id()
+        self.he_id = await self.config.he_id()
         self.ready = True
+
+        asyncio.ensure_future(self.stream_check())
 
     def __unload(self):
         pass
@@ -519,7 +518,7 @@ class Movienight(commands.Cog):
     async def stream_check(self):
 
         while True:
-            print("Running stream check")
+            log.debug("Running stream check")
 
             # check for ULL stream
             # -----------------------------------------
@@ -528,7 +527,7 @@ class Movienight(commands.Cog):
             res = requests.get(req["url"], headers=req["header"])
             jres = json.loads(res.content)
 
-            print("ULL state: " + jres["stream_target_ull"]["state"])
+            log.debug("ULL state: " + jres["stream_target_ull"]["state"])
 
             if jres["stream_target_ull"]["state"] == "started":
                 if not self.ull_stream_running:
@@ -536,7 +535,7 @@ class Movienight(commands.Cog):
                     self.ull_playback_key = target["playback_urls"]["ws"][1].split("/")[
                         5
                     ]
-                    print(
+                    log.info(
                         "Detected ull stream (playback key"
                         + self.ull_playback_key
                         + ")"
@@ -573,14 +572,14 @@ class Movienight(commands.Cog):
             # -----------------------------------------
             jres = self.fetch_cdn_stream_state()
 
-            print("CDN state: " + jres["live_stream"]["state"])
+            log.debug("CDN state: " + jres["live_stream"]["state"])
 
             if jres["live_stream"]["state"] == "started":
                 if not self.cdn_stream_running:
-                    print("Detected cdn stream")
+                    log.info("Detected cdn stream")
 
                     self.cdn_playback_key = self.generate_cdn_token()
-                    print(self.cdn_playback_key)
+                    log.info("cdn playback key is: " + self.cdn_playback_key)
 
                     c = self.bot.get_channel(self.alert_channel_id)
                     embed = discord.Embed(
@@ -614,15 +613,15 @@ class Movienight(commands.Cog):
             )
             token = generator.generateToken()
             if generator.warnings:
-                print("\n".join(generator.warnings))
-            print("%s" % token)
+                log.warning("\n".join(generator.warnings))
+            log.debug("generated cdn token: %s" % token)
 
             return token
 
         except AkamaiTokenError as ex:
-            print("%s\n" % ex)
+            log.error("%s\n" % ex)
         except Exception as ex:
-            print(str(ex))
+            log.error(str(ex))
 
     # ------------------------------------------------------------------------------------------
 
@@ -822,10 +821,10 @@ class Movienight(commands.Cog):
         jres = json.loads(res.content)
 
         if not res.status_code == 200:
-            print("Unable to fetch transcoder")
+            log.error("Unable to fetch transcoder")
 
         if jres["transcoder"]["state"] == "started":
-            print("Transcoder is already running")
+            log.info("Transcoder is already running")
             return True
 
         req = self.create_transcoder_start_request(transcoder_id)
@@ -833,7 +832,7 @@ class Movienight(commands.Cog):
         jres = json.loads(res.content)
 
         if not res.status_code == 200:
-            print("Transcoder start request failed")
+            log.error("Transcoder start request failed")
         else:
             for _ in range(30):
                 req = self.fetch_transcoder_state_request(transcoder_id)
@@ -843,7 +842,7 @@ class Movienight(commands.Cog):
                 if jres["transcoder"]["state"] == "started":
                     return True
                 time.sleep(1)
-            print("Transcoder startup timed out")
+            log.error("Transcoder startup timed out")
 
         return False
 
