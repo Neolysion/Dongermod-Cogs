@@ -80,10 +80,10 @@ class Inhouse(commands.Cog):
         if member:
             if self.role_inhouse in member.roles:
                 await ctx.author.remove_roles(self.role_inhouse, reason="Role removed by " + ctx.author.display_name)
-                await ctx.send("Inhouse role added to " + member.mention)
+                await ctx.send("Inhouse role removed from " + member.mention)
             else:
                 await ctx.author.add_roles(self.role_inhouse, reason="Role added by " + ctx.author.display_name)
-                await ctx.send("Inhouse role removed from " + member.mention)
+                await ctx.send("Inhouse added to " + member.mention)
         else:
             await ctx.send("No member recognized")
 
@@ -93,10 +93,10 @@ class Inhouse(commands.Cog):
         if member:
             if self.role_gold in member.roles:
                 await ctx.author.remove_roles(self.role_gold, reason="Role removed by " + ctx.author.display_name)
-                await ctx.send("Gold role added to " + member.mention)
+                await ctx.send("Gold role removed from " + member.mention)
             else:
                 await ctx.author.add_roles(self.role_gold, reason="Role added by " + ctx.author.display_name)
-                await ctx.send("Gold role removed from " + member.mention)
+                await ctx.send("Gold role added to " + member.mention)
         else:
             await ctx.send("No member recognized")
 
