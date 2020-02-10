@@ -1,0 +1,18 @@
+{
+    "author": [
+      "Boro"
+    ],
+    "bot_version": [
+      3,
+      0,
+      0
+    ],
+    "description": "Inhouse cog",
+    "hidden": false,
+    "install_msg": "Inhouse cog intalled",
+    "requirements": [
+    ],
+    "short": "Custom Inhouse cog",
+    "tags": [
+    ]
+  }

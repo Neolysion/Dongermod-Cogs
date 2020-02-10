@@ -126,6 +126,16 @@ class DAO:
         finally:
             pass
 
+    def update_server_config(self, server_id, config):
+        try:
+            with self.connection.cursor() as cursor:
+                config_as_string = json.dumps(config)
+                sql = 'UPDATE server SET server_configuration_json = %s WHERE server_discord_id = %s;'
+                cursor.execute(sql, (config_as_string, server_id))
+            self.connection.commit()
+        except MySQLError as e:
+            print('MYSQL error: {!r}, errno is {}'.format(e, e.args[0]))
+
     def get_member_stats(self, server_id, member_id):
         found_data = self.get_member_stats_template()
         try:
@@ -162,7 +172,7 @@ class DAO:
         if os.path.exists(self.giveaway_path):
             os.rename(
                 self.giveaway_path,
-                "data/giveaway_"
+                os.path.dirname(self.giveaway_path) + "/giveaway_"
                 + str(datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S"))
                 + ".json",
             )
